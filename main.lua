@@ -1,4 +1,4 @@
--- Childhood Myths Are Real
+-- Childhood Mythos Are Real
 --
 -- The playground legends of 1998, made true. Not the glitches -- those are
 -- their own mod -- but the things people *swore* were in the cartridge and
@@ -46,7 +46,7 @@ return function(mod)
   -- ------- options
   --
   -- One switch per myth. All on: someone who opts into an experimental mod
-  -- called "Childhood Myths Are Real" wants the myths. The structural half
+  -- called "Childhood Mythos Are Real" wants the myths. The structural half
   -- of each (a map, an object) is registered at load, so switching one back
   -- on takes a restart; the trigger half is read live, so switching one OFF
   -- stops it happening immediately.
@@ -70,7 +70,7 @@ return function(mod)
   -- Listed unconditionally on purpose: rehome must recognise the id even in
   -- a session where the garden was not registered, because the SAVE being
   -- read may have been written by a session where it was.
-  local GARDEN = "MYTHOS_BILLS_GARDEN"
+  local GARDEN = "CHILDHOOD_MYTHOS_BILLS_GARDEN"
   local OUR_MAPS = { [GARDEN] = true }
 
   -- You wake up in your own bed.
@@ -141,9 +141,9 @@ return function(mod)
   -- case where it is not.
   local HAVE_DOCK = have("maps", "VERMILION_DOCK")
 
-  mod.content.sprites:register("MYTHOS_SPRITE_TRUCK", {
-    id = "MYTHOS_SPRITE_TRUCK",
-    image = "mods/mythos/assets/truck.png",
+  mod.content.sprites:register("CHILDHOOD_MYTHOS_SPRITE_TRUCK", {
+    id = "CHILDHOOD_MYTHOS_SPRITE_TRUCK",
+    image = "mods/childhood_mythos/assets/truck.png",
     frames = 1,
     walker = false,
   })
@@ -155,7 +155,7 @@ return function(mod)
   if HAVE_DOCK then
   mod.content.maps:patch("VERMILION_DOCK", {
     objects = {
-      { index = 1, name = "MYTHOS_TRUCK", sprite = "MYTHOS_SPRITE_TRUCK",
+      { index = 1, name = "CHILDHOOD_MYTHOS_TRUCK", sprite = "CHILDHOOD_MYTHOS_SPRITE_TRUCK",
         x = TRUCK_X, y = TRUCK_Y, movement = "STAY", range = "NONE" },
     },
   })
