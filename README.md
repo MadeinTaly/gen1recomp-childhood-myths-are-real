@@ -44,31 +44,47 @@ Everything else follows the same rule. Every Pokémon this can give you is one
 the base game already has, so a boxful survives the mod being deleted. It
 registers no new species at all.
 
-## Help wanted, and not only from programmers
+## Tell me which myth to build next
 
-The next versions need **art** far more than they need code, and the art has
-a hard rule attached: it has to be **original**. Nothing ripped from a ROM,
-a fan game, a wiki or another mod — not because anyone is being precious,
-but because the whole project stands on not shipping other people's game
-data, and because the other modders on the index deserve the same courtesy
-we want.
+Four is not the list. It is the four I could reach first, and the ones worth
+having are the ones I never heard — every playground had its own, and they
+all mutated on the way round.
 
-Which turns out to suit this mod exactly. The remaining myths are things
-that **never had a real appearance**: PokéGods invented on a playground,
-a creature people thought they saw in a blurry magazine photograph. There is
-no original to copy. Whatever you draw *is* the definitive version.
+Open an issue if you want:
 
-Open an issue if you want to:
+- **a myth I have not built.** The S.S. ANNE's secret decks. The Safari
+  Zone's hidden areas. The PokeGods somebody swore came after 151. Mew in
+  the truck is famous; the local ones are better;
+- **a myth from where YOU grew up** — with the exact steps as you were told
+  them, however absurd. "Surf up and down the coast a hundred times, do not
+  save, walk backwards through the gate" is precisely the useful level of
+  detail;
+- **a different way to find them.** Right now nothing announces itself, on
+  purpose. If you think there should be a rumour system, an NPC who tells
+  you half of one, a diary that fills in behind you -- say so;
+- **something bigger.** This mod's premise has a lot of room in it.
 
-- **draw something** — a 16×16 overworld sprite, or a 56×56 battle picture,
-  in four values (black, `#555`, `#AAA`, transparent);
-- **describe a myth properly** — how it was told where you grew up, and what
-  the exact steps were meant to be. Regional variants are the good stuff;
-- **say one of these is wrong** — if a trigger does not match the legend you
-  remember, that is a bug report, and a welcome one.
+### And the art, which is genuinely open
 
-There are issue templates for the first two. You do not need to know Lua for
-either.
+The myths that are left **never had a real appearance.** A PokeGod invented
+on a playground, a creature people thought they saw in a blurry magazine
+photo. There is no original to copy, so whatever you draw *becomes* the
+version everybody sees.
+
+| | |
+| --- | --- |
+| overworld object | 16x16 PNG |
+| battle picture | 56x56 PNG |
+| colours | exactly four: `#000000`, `#555555`, `#AAAAAA`, transparent |
+
+**Ideas are the contribution.** You do not have to build it, mock it up or
+know Lua -- describe what you want and why, and it gets considered. The best
+ones ship.
+
+If an idea comes with art, the art has to be **yours**: nothing traced,
+edited or recoloured from a ROM, a fan game, a wiki or another mod. That is
+what keeps this shippable, and it is what the other authors on the index are
+owed.
 
 ## Building on it
 
