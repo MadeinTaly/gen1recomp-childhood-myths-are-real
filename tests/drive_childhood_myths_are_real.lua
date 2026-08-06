@@ -1,6 +1,6 @@
 -- A frame driver that plays the mod, in the real running game.
 --
---   POKEPORT_DRIVER=mods/childhood_mythos/tests/drive_childhood_mythos.lua xvfb-run -a love .
+--   POKEPORT_DRIVER=mods/childhood_myths_are_real/tests/drive_childhood_myths_are_real.lua xvfb-run -a love .
 --
 -- The unit suite calls the mod's script handlers directly, which proves the
 -- logic and proves nothing about whether a player can reach any of it. This
@@ -8,7 +8,7 @@
 -- happened -- including the one that matters most: saving inside the garden
 -- and reading back what landed in the file.
 --
--- It prints CHILDHOOD MYTHOS: lines and quits with a verdict. It captures no images:
+-- It prints CHILDHOOD MYTHS: lines and quits with a verdict. It captures no images:
 -- every pixel on that screen is derived from the player's own ROM.
 --
 -- NOT YET RUN TO COMPLETION. It was written in a container with no audio
@@ -27,7 +27,7 @@ return function()
   local function report(ok, label, detail)
     results[#results + 1] = { ok = ok, label = label, detail = detail }
     if not ok then failures = failures + 1 end
-    print(("CHILDHOOD MYTHOS: %-4s %s%s"):format(ok and "ok" or "FAIL", label,
+    print(("CHILDHOOD MYTHS: %-4s %s%s"):format(ok and "ok" or "FAIL", label,
       detail and ("  -- " .. tostring(detail)) or ""))
   end
 
@@ -75,7 +75,7 @@ return function()
   wait(10)
   if not reachOverworld() then
     report(false, "the game reaches the overworld at all")
-    print("CHILDHOOD MYTHOS: VERDICT FAIL")
+    print("CHILDHOOD MYTHS: VERDICT FAIL")
     love.event.quit(1)
     return
   end
@@ -84,16 +84,16 @@ return function()
   -- The mod must actually be loaded, or every line below is theatre.
   local loaded = false
   for _, m in ipairs((Game.mods and Game.mods.mods) or {}) do
-    if m.id == "childhood_mythos" then loaded = m.enabled and true or false end
+    if m.id == "childhood_myths_are_real" then loaded = m.enabled and true or false end
   end
   if type(Game.mods.mods) == "table" and not loaded then
     for id, m in pairs(Game.mods.mods) do
-      if id == "childhood_mythos" or (type(m) == "table" and m.id == "childhood_mythos") then
+      if id == "childhood_myths_are_real" or (type(m) == "table" and m.id == "childhood_myths_are_real") then
         loaded = (m.enabled ~= false)
       end
     end
   end
-  report(loaded, "the childhood_mythos mod is loaded and enabled",
+  report(loaded, "the childhood_myths_are_real mod is loaded and enabled",
     not loaded and "experimental mods stay off until the player says yes" or nil)
 
   -- Something healthy to battle with, or newWild hands back a dead battle.
@@ -145,10 +145,10 @@ return function()
     Game:keypressed("left") ; wait(2) ; Game:keyreleased("left")
     wait(60)
     local where = Game.overworld.map.id
-    report(where == "CHILDHOOD_MYTHOS_BILLS_GARDEN",
+    report(where == "CHILDHOOD_MYTHS_BILLS_GARDEN",
       "walking into the corner opens the garden", "landed on " .. tostring(where))
 
-    if where == "CHILDHOOD_MYTHOS_BILLS_GARDEN" then
+    if where == "CHILDHOOD_MYTHS_BILLS_GARDEN" then
       -- THE GUARANTEE, exercised for real: save here, read the file back.
       Game:writeSave()
       local SaveData = require("src.core.SaveData")
@@ -158,7 +158,7 @@ return function()
         -- fall back to the in-memory table the writer stamped
         savedMap = Game.save and Game.save.player and Game.save.player.map
       end
-      report(savedMap ~= "CHILDHOOD_MYTHOS_BILLS_GARDEN",
+      report(savedMap ~= "CHILDHOOD_MYTHS_BILLS_GARDEN",
         "a save taken IN the garden does not name the garden",
         "the file says " .. tostring(savedMap))
       report(savedMap == "REDS_HOUSE_2F",
@@ -200,7 +200,7 @@ return function()
     dismiss()
   end
 
-  print(("CHILDHOOD MYTHOS: VERDICT %s  (%d checks, %d failed)")
+  print(("CHILDHOOD MYTHS: VERDICT %s  (%d checks, %d failed)")
     :format(failures == 0 and "PASS" or "FAIL", #results, failures))
   love.event.quit(failures == 0 and 0 or 1)
 end

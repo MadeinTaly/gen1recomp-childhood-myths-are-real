@@ -59,10 +59,10 @@ traced, edited or recoloured from a ROM, a fan game, a wiki or another mod.
 ## Building on it
 
 ```sh
-python3 tools/modkit.py validate mods/childhood_mythos --strict
-python3 tools/modkit.py lint     mods/childhood_mythos
-luajit mods/childhood_mythos/tests/mythos_test.lua
-POKEPORT_DATA_DIR=tests/fixture_data luajit mods/childhood_mythos/tests/mythos_test.lua
+python3 tools/modkit.py validate mods/childhood_myths_are_real --strict
+python3 tools/modkit.py lint     mods/childhood_myths_are_real
+luajit mods/childhood_myths_are_real/tests/mythos_test.lua
+POKEPORT_DATA_DIR=tests/fixture_data luajit mods/childhood_myths_are_real/tests/mythos_test.lua
 python3 tools/make_truck.py        # redraws assets/truck.png
 ```
 

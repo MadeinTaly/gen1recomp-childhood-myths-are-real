@@ -70,7 +70,7 @@ return function(mod)
   -- Listed unconditionally on purpose: rehome must recognise the id even in
   -- a session where the garden was not registered, because the SAVE being
   -- read may have been written by a session where it was.
-  local GARDEN = "CHILDHOOD_MYTHOS_BILLS_GARDEN"
+  local GARDEN = "CHILDHOOD_MYTHS_BILLS_GARDEN"
   local OUR_MAPS = { [GARDEN] = true }
 
   -- You wake up in your own bed.
@@ -141,9 +141,9 @@ return function(mod)
   -- case where it is not.
   local HAVE_DOCK = have("maps", "VERMILION_DOCK")
 
-  mod.content.sprites:register("CHILDHOOD_MYTHOS_SPRITE_TRUCK", {
-    id = "CHILDHOOD_MYTHOS_SPRITE_TRUCK",
-    image = "mods/childhood_mythos/assets/truck.png",
+  mod.content.sprites:register("CHILDHOOD_MYTHS_SPRITE_TRUCK", {
+    id = "CHILDHOOD_MYTHS_SPRITE_TRUCK",
+    image = "mods/childhood_myths_are_real/assets/truck.png",
     frames = 1,
     walker = false,
   })
@@ -155,7 +155,7 @@ return function(mod)
   if HAVE_DOCK then
   mod.content.maps:patch("VERMILION_DOCK", {
     objects = {
-      { index = 1, name = "CHILDHOOD_MYTHOS_TRUCK", sprite = "CHILDHOOD_MYTHOS_SPRITE_TRUCK",
+      { index = 1, name = "CHILDHOOD_MYTHS_TRUCK", sprite = "CHILDHOOD_MYTHS_SPRITE_TRUCK",
         x = TRUCK_X, y = TRUCK_Y, movement = "STAY", range = "NONE" },
     },
   })

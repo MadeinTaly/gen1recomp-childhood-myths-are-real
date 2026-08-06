@@ -1,4 +1,4 @@
--- Standalone: luajit mods/childhood_mythos/tests/mythos_test.lua
+-- Standalone: luajit mods/childhood_myths_are_real/tests/mythos_test.lua
 --
 -- The thing this file exists for is the transparency guarantee, not the
 -- myths. A myth that does not fire is a disappointment; a save that will
@@ -16,8 +16,8 @@ local MapScripts = require("src.script.MapScripts")
 local MapLoader = require("src.world.MapLoader")
 local BattleState = require("src.battle.BattleState")
 
-local ID = "childhood_mythos"
-local DIR = os.getenv("CHILDHOOD_MYTHOS_DIR") or "mods/childhood_mythos"
+local ID = "childhood_myths_are_real"
+local DIR = os.getenv("CHILDHOOD_MYTHS_DIR") or "mods/childhood_myths_are_real"
 
 -- CI has no ROM: it boots tests/fixture_data, which is three species and
 -- two maps and has none of Kanto in it. The myths are all anchored to real
@@ -68,7 +68,7 @@ T.check(run.mod ~= nil and run.mod.enabled,
 T.check(#(run.loader.optionSchemas[ID] or {}) > 0, "and its body actually ran")
 
 local exports = run.loader.exports[ID]
-local GARDEN = "CHILDHOOD_MYTHOS_BILLS_GARDEN"
+local GARDEN = "CHILDHOOD_MYTHS_BILLS_GARDEN"
 
 local store = run.loader.modOptions[ID] or {}
 run.loader.modOptions[ID] = store
@@ -109,7 +109,7 @@ end
 -- ------- THE GUARANTEE: a save inside a myth is a save that still loads
 --
 -- MapLoader.build asserts on an unknown map id and nothing up the chain
--- pcalls it, so a save pointing at CHILDHOOD_MYTHOS_BILLS_GARDEN with this mod
+-- pcalls it, so a save pointing at CHILDHOOD_MYTHS_BILLS_GARDEN with this mod
 -- removed does not lose a myth -- it refuses to boot. rehome is the whole
 -- defence.
 
@@ -230,10 +230,10 @@ end
 -- ------- the truck
 
 if KANTO then
-  T.check(Data.sprites.CHILDHOOD_MYTHOS_SPRITE_TRUCK ~= nil, "the truck sprite is registered")
+  T.check(Data.sprites.CHILDHOOD_MYTHS_SPRITE_TRUCK ~= nil, "the truck sprite is registered")
   local truck
   for _, o in ipairs(Data.maps.VERMILION_DOCK.objects or {}) do
-    if o.sprite == "CHILDHOOD_MYTHOS_SPRITE_TRUCK" then truck = o end
+    if o.sprite == "CHILDHOOD_MYTHS_SPRITE_TRUCK" then truck = o end
   end
   T.check(truck ~= nil, "and the truck is on the dock")
 
@@ -287,7 +287,7 @@ if KANTO then
   local dock = MapScripts.get("VERMILION_DOCK")
   local truck
   for _, o in ipairs(Data.maps.VERMILION_DOCK.objects or {}) do
-    if o.sprite == "CHILDHOOD_MYTHOS_SPRITE_TRUCK" then truck = o end
+    if o.sprite == "CHILDHOOD_MYTHS_SPRITE_TRUCK" then truck = o end
   end
   local g = fakeGame({ inventory = { HM_STRENGTH = 1 } })
   T.check(not dock.onInteract(g, nil, truck.x, truck.y),
@@ -364,12 +364,12 @@ end
 -- ------- the art is ours, and is a legal object sprite
 
 do
-  local path = Data.sprites.CHILDHOOD_MYTHOS_SPRITE_TRUCK.image
-  T.check(type(path) == "string" and path:find("childhood_mythos", 1, true),
+  local path = Data.sprites.CHILDHOOD_MYTHS_SPRITE_TRUCK.image
+  T.check(type(path) == "string" and path:find("childhood_myths_are_real", 1, true),
     "the truck's art comes from this mod, not from the ROM cache")
-  T.check(Data.sprites.CHILDHOOD_MYTHOS_SPRITE_TRUCK.source == nil,
+  T.check(Data.sprites.CHILDHOOD_MYTHS_SPRITE_TRUCK.source == nil,
     "and carries no ROM source line")
 end
 
 run.release()
-T.finish("childhood_mythos")
+T.finish("childhood_myths_are_real")
