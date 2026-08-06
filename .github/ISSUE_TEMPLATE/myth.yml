@@ -1,20 +1,19 @@
-name: Tell a myth
-description: How the legend was told where you grew up.
+name: Suggest a myth
+description: A playground legend this mod should make true.
 title: "[myth] "
-labels: ["myth"]
+labels: ["myth", "idea"]
 body:
   - type: markdown
     attributes:
       value: |
-        These rumours travelled by word of mouth and mutated on the way, so
-        there is no single correct version — the variants are the
-        interesting part. A myth described precisely enough is most of the
-        work of building it.
+        Four myths are in. Four is not the list — every playground had its
+        own, and the local ones are better than the famous ones. Describe it
+        and it gets considered; you do not need to know any Lua.
   - type: input
     id: name
     attributes:
       label: What was it called?
-      placeholder: Mew under the truck, Pikablu, the 152nd Pokémon...
+      placeholder: "Mew under the truck, Pikablu, the 152nd Pokemon..."
     validations:
       required: true
   - type: textarea
@@ -22,7 +21,7 @@ body:
     attributes:
       label: What were you supposed to do?
       description: >
-        The exact steps as you were told them, however absurd. "Don't get on
+        The exact steps as you were told them, however absurd. "Do not get on
         the ship, surf back, use Strength a hundred times" is precisely the
         level of detail that is useful.
     validations:
@@ -37,11 +36,11 @@ body:
     id: where
     attributes:
       label: Where and roughly when did you hear it?
-      placeholder: playground in Naples, about 1999
+      placeholder: "playground in Naples, about 1999"
   - type: checkboxes
     id: rules
     attributes:
       label: One check
       options:
-        - label: This is a myth, a rumour or a memory — not a copy of another game's or another mod's content.
+        - label: This is a myth, a rumour or a memory - not a copy of another game's or another mod's content.
           required: true
