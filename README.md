@@ -88,6 +88,12 @@ you change how saving inside a myth behaves, sabotage the change and watch
 the suite go red before you trust it — those assertions are the ones
 protecting somebody's file.
 
+
+## Support
+
+If this made the myths real, you can support the author here:
+<https://linktr.ee/made_in_taly>
+
 ## Licence and affiliation
 
 MIT. See `LICENSE`.
