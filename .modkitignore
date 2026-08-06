@@ -1,8 +1,8 @@
 # Stays in the repo, out of the distributed package: both of these require
 # engine modules, which reads as a private require against the shipped
 # archive (CONTRIBUTING-mods.md "What the PR must contain", 2).
-tests/mythos_test.lua
-tests/drive_mythos.lua
+tests/childhood_mythos_test.lua
+tests/drive_childhood_mythos.lua
 # The art generator is source, not runtime -- the PNG it wrote ships, the
 # script that drew it lives in the repo for whoever redraws it.
 tools/make_truck.py
