@@ -44,47 +44,17 @@ Everything else follows the same rule. Every Pokémon this can give you is one
 the base game already has, so a boxful survives the mod being deleted. It
 registers no new species at all.
 
-## Tell me which myth to build next
+## Ideas, and help building them
 
-Four is not the list. It is the four I could reach first, and the ones worth
-having are the ones I never heard — every playground had its own, and they
-all mutated on the way round.
+**Got an idea for something this should do?** Open an issue — there is a
+template for it. You do not need to know any Lua, and you do not need to
+have worked out how it would be built. Describe what you want and why.
 
-Open an issue if you want:
+**Want to build it yourself?** Open a pull request. Collaboration is welcome
+on any part of this.
 
-- **a myth I have not built.** The S.S. ANNE's secret decks. The Safari
-  Zone's hidden areas. The PokeGods somebody swore came after 151. Mew in
-  the truck is famous; the local ones are better;
-- **a myth from where YOU grew up** — with the exact steps as you were told
-  them, however absurd. "Surf up and down the coast a hundred times, do not
-  save, walk backwards through the gate" is precisely the useful level of
-  detail;
-- **a different way to find them.** Right now nothing announces itself, on
-  purpose. If you think there should be a rumour system, an NPC who tells
-  you half of one, a diary that fills in behind you -- say so;
-- **something bigger.** This mod's premise has a lot of room in it.
-
-### And the art, which is genuinely open
-
-The myths that are left **never had a real appearance.** A PokeGod invented
-on a playground, a creature people thought they saw in a blurry magazine
-photo. There is no original to copy, so whatever you draw *becomes* the
-version everybody sees.
-
-| | |
-| --- | --- |
-| overworld object | 16x16 PNG |
-| battle picture | 56x56 PNG |
-| colours | exactly four: `#000000`, `#555555`, `#AAAAAA`, transparent |
-
-**Ideas are the contribution.** You do not have to build it, mock it up or
-know Lua -- describe what you want and why, and it gets considered. The best
-ones ship.
-
-If an idea comes with art, the art has to be **yours**: nothing traced,
-edited or recoloured from a ROM, a fan game, a wiki or another mod. That is
-what keeps this shippable, and it is what the other authors on the index are
-owed.
+Anything you send that includes art has to be your own work — nothing
+traced, edited or recoloured from a ROM, a fan game, a wiki or another mod.
 
 ## Building on it
 
