@@ -11,9 +11,16 @@ name: Release
 # stops if it does. That makes the job idempotent and self-starting: adding
 # this file publishes the version already sitting in the manifest, and every
 # later push is a no-op until the number moves.
+#
+# A tag is the third way in, and the one that needs no button. Pushing v<x>
+# runs this file AS IT EXISTS ON THAT TAG, so a release can be cut with git
+# alone -- no Actions:write, no dispatch, and no wait for the tag's commit to
+# reach main. The publish step below asks gh for the tag it is given rather
+# than assuming it has to create one, so an already-pushed tag is reused.
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
