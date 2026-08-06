@@ -1,5 +1,7 @@
 # Childhood Myths Are Real
 
+> ### *Memento, puer.*
+
 A mod for [Gen1Recomp](https://github.com/bryanthaboi/gen1recomp).
 
 In 1998 everyone's cousin had seen Mew under the truck. Everyone's friend
