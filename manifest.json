@@ -7,7 +7,7 @@
   "profile": "content",
   "category": "GAMEPLAY",
   "game_version": ">=0.0.0-0 <2.0.0",
-  "github": "MadeinTaly/gen1recomp-childhood-mythos-are-real",
+  "github": "MadeinTaly/gen1recomp-childhood-myths-are-real",
   "priority": 100,
   "experimental": true,
   "dependencies": [],

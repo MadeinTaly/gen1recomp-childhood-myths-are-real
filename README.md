@@ -25,13 +25,26 @@ list of what you have found, no marker for what you have not, and no menu
 entry that lights up. Looking was the whole point; a checklist would be a
 different mod, and a worse one.
 
-Each of the four has its own switch under `OPTIONS`. All on.
+Each of the four has its own switch under `OPTIONS`. All on. Turning one off
+stops it happening straight away; turning one back on takes a restart,
+because the map and the truck are registered when the mod loads.
+
+## Installing it
+
+Download `childhood_mythos-0.1.0.zip` from
+[Releases](https://github.com/MadeinTaly/gen1recomp-childhood-myths-are-real/releases)
+and install it the way Gen1Recomp installs any mod — drop it in `mods/` and
+let the manager unpack it, or point the manager at the file.
+
+This mod is marked **experimental**, which means Gen1Recomp keeps it switched
+off until you say otherwise. Enable it in the mod manager, then start the
+game: nothing will happen until you do.
 
 ## It is safe to remove
 
 This mattered more than any of the myths, so it is worth saying plainly.
 
-A saved game records the map you were standing on by name. The engine opens
+A saved game records the map you were standing on by id. The engine opens
 that map with an `assert`, and nothing catches it. So if a mod invents a map,
 and you save inside it, and you later turn that mod off — the game does not
 lose a map. It refuses to start.
@@ -58,12 +71,16 @@ traced, edited or recoloured from a ROM, a fan game, a wiki or another mod.
 
 ## Building on it
 
+Clone this repo into a Gen1Recomp checkout as `mods/childhood_mythos`, and
+run everything below from the engine's root:
+
 ```sh
 python3 tools/modkit.py validate mods/childhood_mythos --strict
 python3 tools/modkit.py lint     mods/childhood_mythos
-luajit mods/childhood_mythos/tests/mythos_test.lua
-POKEPORT_DATA_DIR=tests/fixture_data luajit mods/childhood_mythos/tests/mythos_test.lua
-python3 tools/make_truck.py        # redraws assets/truck.png
+luajit mods/childhood_mythos/tests/childhood_mythos_test.lua
+POKEPORT_DATA_DIR=tests/fixture_data \
+  luajit mods/childhood_mythos/tests/childhood_mythos_test.lua
+python3 mods/childhood_mythos/tools/make_truck.py   # redraws assets/truck.png
 ```
 
 The suite is 63 checks on a full dataset and 15 on the ROM-free fixture. If

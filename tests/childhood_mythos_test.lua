@@ -1,4 +1,4 @@
--- Standalone: luajit mods/childhood_mythos/tests/mythos_test.lua
+-- Standalone: luajit mods/childhood_mythos/tests/childhood_mythos_test.lua
 --
 -- The thing this file exists for is the transparency guarantee, not the
 -- myths. A myth that does not fire is a disappointment; a save that will
