@@ -1,0 +1,18 @@
+{
+  "id": "mythos",
+  "name": "Childhood Myths Are Real",
+  "version": "0.1.0",
+  "api": 2,
+  "entry": "main.lua",
+  "profile": "content",
+  "category": "GAMEPLAY",
+  "game_version": ">=0.0.0-0 <2.0.0",
+  "github": "MadeinTaly/gen1recomp-childhood-myths-are-real",
+  "priority": 100,
+  "experimental": true,
+  "dependencies": [],
+  "optional_dependencies": [],
+  "conflicts": [],
+  "permissions": ["engine_internals"],
+  "description": "The playground legends, made true: Mew under the truck, a ghost in the tower that can be caught, a garden behind Bill's house, and an S.S. Anne that comes back. Nothing announces itself -- the conditions are the ones the rumour gave."
+}

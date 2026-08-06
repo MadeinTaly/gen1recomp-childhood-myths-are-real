@@ -1,0 +1,47 @@
+name: Tell a myth
+description: How the legend was told where you grew up.
+title: "[myth] "
+labels: ["myth"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These rumours travelled by word of mouth and mutated on the way, so
+        there is no single correct version — the variants are the
+        interesting part. A myth described precisely enough is most of the
+        work of building it.
+  - type: input
+    id: name
+    attributes:
+      label: What was it called?
+      placeholder: Mew under the truck, Pikablu, the 152nd Pokémon...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What were you supposed to do?
+      description: >
+        The exact steps as you were told them, however absurd. "Don't get on
+        the ship, surf back, use Strength a hundred times" is precisely the
+        level of detail that is useful.
+    validations:
+      required: true
+  - type: textarea
+    id: payoff
+    attributes:
+      label: And what was supposed to happen?
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where and roughly when did you hear it?
+      placeholder: playground in Naples, about 1999
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: One check
+      options:
+        - label: This is a myth, a rumour or a memory — not a copy of another game's or another mod's content.
+          required: true
