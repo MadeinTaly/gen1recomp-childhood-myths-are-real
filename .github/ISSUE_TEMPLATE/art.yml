@@ -1,0 +1,55 @@
+name: Offer some art
+description: A sprite for one of the myths. No Lua needed.
+title: "[art] "
+labels: ["art"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The myths that are left never had a real appearance — a PokéGod
+        invented on a playground, a creature people thought they saw in a
+        blurry photo. There is nothing to copy, so whatever you draw
+        becomes the version everybody sees.
+
+        **The format is narrow, and it is the Game Boy's, not ours:**
+
+        | | |
+        | --- | --- |
+        | overworld object | 16×16 PNG |
+        | battle picture | 56×56 PNG |
+        | colours | exactly four: `#000000`, `#555555`, `#AAAAAA`, and fully transparent |
+
+        Anything else will look wrong next to the game's own art, and the
+        packer will reject art that is not in that palette.
+  - type: input
+    id: which
+    attributes:
+      label: Which myth is it for?
+      placeholder: Pikablu / Charcolt / the truck / something else
+    validations:
+      required: true
+  - type: textarea
+    id: art
+    attributes:
+      label: The art
+      description: Drag the PNG straight into this box. A sketch is fine to start a conversation.
+    validations:
+      required: true
+  - type: checkboxes
+    id: origin
+    attributes:
+      label: Where it came from
+      description: >
+        This is the one thing there is no flexibility on. This project ships
+        no ROM data and no other creator's work, and a single ripped sprite
+        would put the mod out of the community index.
+      options:
+        - label: I drew this myself, and it is not traced, edited or recoloured from a ROM, a fan game, a wiki or another mod.
+          required: true
+        - label: I am happy for it to ship under this mod's MIT licence, credited to me.
+          required: true
+  - type: input
+    id: credit
+    attributes:
+      label: How should you be credited?
+      placeholder: the name you want in the changelog
