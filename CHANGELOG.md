@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.0 — the fifth one is a witness
+
+- **THE KID.** He is not a fifth legend, he is a witness -- the one every
+  playground had, who had heard all the other rumours and would tell you
+  which one you had not gotten round to yet. He stands two tiles down the
+  dock from the truck, sharing that map's own patch and map script rather
+  than getting one of his own, because a second `maps:patch` call on
+  VERMILION_DOCK would have replaced the truck's object list wholesale
+  instead of adding to it. Talk to him with nothing found and he repeats
+  one rumour, picked at random, in playground language and with no
+  coordinates. Prove some of the four and he keeps score of what is left,
+  one myth per text box. Prove all four and he hands you a fifth, one
+  final time: a wild MEWTWO, the other big schoolyard claim of 1998 and a
+  species the base game already has. No new sprite is drawn for him --
+  he reuses one the cartridge already carries, preferring the boy holding
+  a GAME BOY because that is the rumour's own portrait, and falling back
+  through three other ids read out of the extractor's own sprite manifest.
+  If a dataset carries none of them he is simply not registered, the same
+  honest way a myth without its map is not. His
+  own switch under OPTIONS, default on.
+
 ## 0.1.0 — four of them
 
 The first four playground legends, made true. Nothing announces itself: the

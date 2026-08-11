@@ -1,6 +1,6 @@
 -- Human-facing metadata: tooling and the manager's detail pane read this.
 return {
-  summary = "The playground legends of 1998, made true -- Mew under the truck, a ghost you can catch, a garden behind Bill's house, and an S.S. ANNE that comes back.",
+  summary = "The playground legends of 1998, made true -- Mew under the truck, a ghost you can catch, a garden behind Bill's house, an S.S. ANNE that comes back, and a kid who keeps score of all of it.",
   author = "MadeinTaly",
   support = "https://linktr.ee/made_in_taly",
   tags = { "myths", "legends", "gameplay", "experimental", "encounters" },
@@ -11,15 +11,16 @@ return {
       "TOWER GHOST: one specific dead end on POKEMON TOWER 6F, and only while you still have no SILPH SCOPE. Before the Scope there was a way, and now there is",
       "BILLS GARDEN: a passage in the corner of Bill's house, leading out to grass with EEVEE, DITTO, CHANSEY, PORYGON and LAPRAS in it",
       "SS ANNE: beat the Elite Four and the ship comes back into port, and the dock is open again",
+      "THE KID: a kid standing near the truck who keeps score of the other four -- talk to him with none proven and he repeats one rumour at random, with no coordinates; prove some and he names what is left; prove all four and he hands you a wild MEWTWO, once",
       "one switch per myth under OPTIONS, all on -- turning one OFF stops it happening from that moment",
     },
     changed = {
-      "VERMILION DOCK gains one object (it had none) and BILLS HOUSE gains a third warp; both of its original exits are restated and asserted by the test suite",
+      "VERMILION DOCK gains a second object for the kid, sharing the truck's own patch call and map script rather than a second patch (which would have replaced the object list and erased the truck); BILLS HOUSE gains a third warp; every original object and warp on both maps is restated and asserted by the test suite",
     },
     known = {
       "SAFE TO REMOVE. A save written inside the garden records you asleep in your own bed in Pallet Town instead, because the engine asserts on an unknown map id and a save naming a map this mod invented would refuse to boot without it",
       "every Pokemon this mod can give you is a base-game species, so a full box survives the mod being deleted. Nothing here registers a new species",
-      "a myth whose map or species your dataset does not carry is simply not registered, rather than failing validation",
+      "a myth whose map or species your dataset does not carry is simply not registered, rather than failing validation. THE KID follows the same rule for his sprite: no matching id, no kid",
       "switching a myth back ON takes a restart, because the map and the object are registered at load; switching one OFF takes effect at once",
       "nothing announces itself. There is no list of what you have found and no marker for what you have not -- looking for them was the whole point",
     },

@@ -18,6 +18,7 @@ None of it was in the cartridge. This puts it there.
 | **TOWER GHOST** | A dead end on POKéMON TOWER 6F, before you have the SILPH SCOPE. |
 | **BILLS GARDEN** | The corner of Bill's house. |
 | **SS ANNE** | Beat the Elite Four. |
+| **THE KID** | A kid standing near the truck. Talk to him. |
 
 That table is more than the rumour ever gave anyone, and it is already more
 than the mod tells you in game. **Nothing announces itself.** There is no
@@ -25,13 +26,23 @@ list of what you have found, no marker for what you have not, and no menu
 entry that lights up. Looking was the whole point; a checklist would be a
 different mod, and a worse one.
 
-Each of the four has its own switch under `OPTIONS`. All on. Turning one off
+Each of the five has its own switch under `OPTIONS`. All on. Turning one off
 stops it happening straight away; turning one back on takes a restart,
-because the map and the truck are registered when the mod loads.
+because the map and the objects are registered when the mod loads.
+
+THE KID is the exception to "nothing announces itself," and on purpose: he
+is not a fifth legend, he is a witness. Every playground had one -- the kid
+who had heard all the other rumours and would tell you which one you had
+not gotten round to yet. Talk to him with none of the four proven and he
+repeats one of the rumours, playground-vague, no coordinates. Prove some of
+them and he keeps score of what is left. Prove all four and he has one
+rumour of his own -- the other big claim of 1998, the one nobody could even
+see. He stands next to the truck rather than getting a map of his own,
+which is also why: he does not cost the save-safety guarantee anything.
 
 ## Installing it
 
-Download `childhood_myths_are_real-0.1.0.zip` from
+Download `childhood_myths_are_real-0.2.0.zip` from
 [Releases](https://github.com/MadeinTaly/gen1recomp-childhood-myths-are-real/releases)
 and install it the way Gen1Recomp installs any mod — drop it in `mods/` and
 let the manager unpack it, or point the manager at the file.
@@ -83,7 +94,9 @@ POKEPORT_DATA_DIR=tests/fixture_data \
 python3 mods/childhood_myths_are_real/tools/make_truck.py  # redraws the truck
 ```
 
-The suite is 63 checks on a full dataset and 15 on the ROM-free fixture. If
+The suite is 17 checks on the ROM-free fixture, and more still on a full
+dataset -- including the kid's own block, which only runs there, and only
+when the dataset actually carries a usable stand-in sprite for him. If
 you change how saving inside a myth behaves, sabotage the change and watch
 the suite go red before you trust it — those assertions are the ones
 protecting somebody's file.

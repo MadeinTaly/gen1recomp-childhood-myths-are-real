@@ -37,6 +37,9 @@
 --         shapes, and everyone believed one of them could be caught.
 -- GARDEN  A hidden passage behind Bill's house, with rare Pokemon in it.
 -- ANNE    The S.S. Anne never comes back. After the Elite Four, it does.
+-- KID     A kid on the dock, standing near the same truck everyone swore
+--         hid something. Talk to him and he keeps score of the other
+--         four, and has one of his own once they have all come true.
 
 return function(mod)
   local Flags = require("src.script.Flags")
@@ -45,16 +48,18 @@ return function(mod)
 
   -- ------- options
   --
-  -- One switch per myth. All on: someone who opts into an experimental mod
-  -- called "Childhood Mythos Are Real" wants the myths. The structural half
-  -- of each (a map, an object) is registered at load, so switching one back
-  -- on takes a restart; the trigger half is read live, so switching one OFF
-  -- stops it happening immediately.
+  -- One switch per myth, and one more for the kid who keeps score of them.
+  -- All on: someone who opts into an experimental mod called "Childhood
+  -- Mythos Are Real" wants the myths. The structural half of each (a map,
+  -- an object) is registered at load, so switching one back on takes a
+  -- restart; the trigger half is read live, so switching one OFF stops it
+  -- happening immediately.
   mod.options:define({
     { key = "truck",  label = "THE TRUCK",    type = "toggle", default = true },
     { key = "ghost",  label = "TOWER GHOST",  type = "toggle", default = true },
     { key = "garden", label = "BILLS GARDEN", type = "toggle", default = true },
     { key = "anne",   label = "SS ANNE",      type = "toggle", default = true },
+    { key = "kid",    label = "THE KID",      type = "toggle", default = true },
   })
 
   local function on(key)
@@ -152,16 +157,134 @@ return function(mod)
   -- this map is the top two rows, so they face it from (4,1).
   local TRUCK_X, TRUCK_Y = 4, 0
 
+  -- ------- myth 5: the kid, who keeps score
+  --
+  -- He is not a fifth legend, he is a witness -- the one every playground
+  -- had, who had heard all the others and would tell you about the one you
+  -- had not found yet. He lives on this same dock rather than a map of his
+  -- own on purpose: `maps:patch` REPLACES the `objects` field rather than
+  -- growing it (see BILLS_HOUSE below for the case where that matters for
+  -- warps), so a second `patch` call here would silently delete the truck.
+  -- He is therefore a second entry in the SAME patch, added below, and his
+  -- `onInteract` is a second branch in the SAME map script, checked first.
+  --
+  -- (6,0) is two tiles further down the same walkable top row the truck
+  -- sits on, close enough to read as "hanging around the truck" and far
+  -- enough that the two objects and the two players standing to face them,
+  -- at (4,1) and (6,1), never overlap.
+  local KID_X, KID_Y = 6, 0
+
+  -- No new art for a kid standing still: reuse a sprite the base game
+  -- already carries. Every id below was read out of tools/rom_manifest.json,
+  -- which is the extractor's own list of the 72 overworld sprites it pulls
+  -- from the cartridge -- these are names that exist, not names that sound
+  -- like they should. GAMEBOY_KID leads because it is the rumour's own
+  -- portrait: a boy holding the machine the rumour was about. The rest are
+  -- fallbacks for a dataset that carries a different subset. None existing
+  -- is not an error -- see the file's header helper comment -- it just
+  -- means no kid this run, same as a myth missing its map.
+  local KID_SPRITE_CANDIDATES = {
+    "SPRITE_GAMEBOY_KID", "SPRITE_YOUNGSTER", "SPRITE_LITTLE_BOY", "SPRITE_BUG_CATCHER",
+  }
+  local KID_SPRITE
+  for _, candidate in ipairs(KID_SPRITE_CANDIDATES) do
+    if have("sprites", candidate) then KID_SPRITE = candidate break end
+  end
+
+  -- The reward for four out of four is one wild MEWTWO, not a second MEW.
+  -- MEW is already spoken for by the truck, and repeating it would read as
+  -- a rerun rather than as a fifth rumour paying off. MEWTWO was the OTHER
+  -- big schoolyard claim of 1998 -- "there's one you can't even see" -- and
+  -- it is a species the base game already has (Cerulean Cave, postgame),
+  -- so a box holding one survives this mod being removed exactly the way
+  -- the other three myths' Pokemon do.
+  local KID_REWARD_SPECIES, KID_REWARD_LEVEL = "MEWTWO", 70
+
+  -- Everything the kid needs has to exist, or he is not registered at all:
+  -- the dock to stand on, a sprite to be drawn with, and the species his
+  -- payoff hands out. A kid who exists but can never pay off the fourth
+  -- myth is worse than no kid.
+  local HAVE_KID = HAVE_DOCK and KID_SPRITE ~= nil
+    and have("pokemon", KID_REWARD_SPECIES)
+
+  -- Order matters here: it is the order he reports on, and the order the
+  -- header comment and the README list the four in.
+  local MYTH_ORDER = { "truck", "ghost", "garden", "anne" }
+  local MYTH_LABEL = {
+    truck = "THE TRUCK", ghost = "TOWER GHOST", garden = "BILLS GARDEN", anne = "SS ANNE",
+  }
+  -- The rumour as the playground told it -- never a tile, never a map id.
+  local MYTH_CLAIM = {
+    truck  = "SOMETHING SLEEPS\nUNDER A TRUCK\vBY THE DOCK!",
+    ghost  = "ONE OF THE GHOSTS\nIN THE TOWER YOU\vCAN CATCH!",
+    garden = "THERE'S A SECRET\nGARDEN SOMEWHERE\vWITH RARE ONES!",
+    anne   = "THE SHIP COMES\nBACK SOMEDAY,\vI SWEAR IT!",
+  }
+
+  local function missingMyths()
+    local missing = {}
+    for _, key in ipairs(MYTH_ORDER) do
+      if not found(key) then missing[#missing + 1] = key end
+    end
+    return missing
+  end
+
   if HAVE_DOCK then
-  mod.content.maps:patch("VERMILION_DOCK", {
-    objects = {
-      { index = 1, name = "CHILDHOOD_MYTHS_TRUCK", sprite = "CHILDHOOD_MYTHS_SPRITE_TRUCK",
-        x = TRUCK_X, y = TRUCK_Y, movement = "STAY", range = "NONE" },
-    },
-  })
+  local dockObjects = {
+    { index = 1, name = "CHILDHOOD_MYTHS_TRUCK", sprite = "CHILDHOOD_MYTHS_SPRITE_TRUCK",
+      x = TRUCK_X, y = TRUCK_Y, movement = "STAY", range = "NONE" },
+  }
+  if HAVE_KID then
+    dockObjects[#dockObjects + 1] = {
+      index = 2, name = "CHILDHOOD_MYTHS_KID", sprite = KID_SPRITE,
+      x = KID_X, y = KID_Y, movement = "STAY", range = "NONE",
+    }
+  end
+
+  mod.content.maps:patch("VERMILION_DOCK", { objects = dockObjects })
 
   mod.content.map_scripts:register("VERMILION_DOCK", {
     onInteract = function(game, _, fx, fy)
+      -- Checked first, and returns unconditionally either way, so this
+      -- never falls through into the truck's own coordinate check below.
+      if HAVE_KID and fx == KID_X and fy == KID_Y then
+        if not on("kid") then return false end
+
+        if found("kid") then
+          game.stack:push(TextBox.new(game,
+            "THANKS AGAIN FOR\nBELIEVING ME."))
+          return true
+        end
+
+        local missing = missingMyths()
+
+        if #missing == 0 then
+          remember("kid")
+          encounter(game, KID_REWARD_SPECIES, KID_REWARD_LEVEL,
+            "YOU WERE RIGHT\nABOUT ALL OF IT!\fEVEN THIS ONE\nWAS TRUE ALL\vALONG...")
+          return true
+        end
+
+        if #missing == #MYTH_ORDER then
+          -- Nothing proven yet: he introduces himself and repeats ONE
+          -- rumour, picked at random, the way any one kid on any one
+          -- playground only ever swore to the one his cousin told him.
+          local pick = MYTH_ORDER[math.random(#MYTH_ORDER)]
+          game.stack:push(TextBox.new(game,
+            "MY COUSIN SWEARS\nHE'S SEEN STUFF.\f" .. MYTH_CLAIM[pick]))
+          return true
+        end
+
+        -- Some found, some not: he admits the ones you proved him right
+        -- about, then names every one still outstanding, one to a page.
+        local pages = { "SO IT WAS TRUE!\nI KNEW IT!" }
+        for _, key in ipairs(missing) do
+          pages[#pages + 1] = "STILL LOOKING\nFOR " .. MYTH_LABEL[key] .. "?"
+        end
+        game.stack:push(TextBox.new(game, table.concat(pages, "\f")))
+        return true
+      end
+
       if fx ~= TRUCK_X or fy ~= TRUCK_Y then return false end
       if not on("truck") then return false end
 

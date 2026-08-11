@@ -29,6 +29,16 @@ local KANTO = Data.maps.BILLS_HOUSE ~= nil
   and Data.maps.POKEMON_TOWER_6F ~= nil
   and Data.maps.REDS_HOUSE_2F ~= nil
 
+-- The kid reuses a base-game sprite rather than shipping his own art, and
+-- mirrors main.lua's own candidate list exactly -- if that list changes
+-- there, it has to change here too, or this stops testing what ships.
+local KID_SPRITE_CANDIDATES = { "SPRITE_YOUNGSTER", "YOUNGSTER", "SPRITE_BOY", "BOY" }
+local HAVE_KID_SPRITE = false
+for _, id in ipairs(KID_SPRITE_CANDIDATES) do
+  if Data.sprites[id] then HAVE_KID_SPRITE = true end
+end
+local HAVE_KID = KANTO and HAVE_KID_SPRITE and Data.pokemon.MEWTWO ~= nil
+
 -- Snapshot what the base game says BEFORE the mod runs. Anything the mod
 -- claims to preserve has to be compared against this, not against itself.
 local BASE_BILLS_WARPS = {}
@@ -67,8 +77,27 @@ T.check(run.mod ~= nil and run.mod.enabled,
   "the mod is ENABLED -- otherwise every assertion below is vacuous")
 T.check(#(run.loader.optionSchemas[ID] or {}) > 0, "and its body actually ran")
 
+do
+  local hasKidOption = false
+  for _, row in ipairs(run.loader.optionSchemas[ID] or {}) do
+    if row.key == "kid" then hasKidOption = true end
+  end
+  T.check(hasKidOption, "THE KID has its own OPTIONS toggle, default on")
+end
+
 local exports = run.loader.exports[ID]
 local GARDEN = "CHILDHOOD_MYTHS_BILLS_GARDEN"
+
+-- The kid stands on VERMILION_DOCK, a map the base game already has, not
+-- a map this mod invents -- so `rehome` has nothing new to cover for him.
+-- This has to hold true unconditionally, ROM or no ROM, or a save
+-- standing next to him would be exactly the kind of hole the header's
+-- rule exists to close.
+do
+  local count = 0
+  for _ in pairs(exports.maps or {}) do count = count + 1 end
+  T.eq(count, 1, "the kid did not grow the mod a map of its own")
+end
 
 local store = run.loader.modOptions[ID] or {}
 run.loader.modOptions[ID] = store
@@ -277,6 +306,99 @@ if KANTO then
   local again = 0
   for _, st in ipairs(pushed) do if st and st.isBattle then again = again + 1 end end
   T.eq(again, 0, "the second look finds nothing under it")
+end
+
+-- ------- the kid
+
+-- He shares the truck's patch call and the truck's map script, which is
+-- exactly the arrangement the header warns about: a second `maps:patch`
+-- on this map would have replaced `objects` wholesale and erased the
+-- truck. So the first thing worth proving is that both are still here
+-- together, before anything about the kid himself.
+if HAVE_KID then
+  local truck, kid
+  for _, o in ipairs(Data.maps.VERMILION_DOCK.objects or {}) do
+    if o.sprite == "CHILDHOOD_MYTHS_SPRITE_TRUCK" then truck = o end
+    if o.name == "CHILDHOOD_MYTHS_KID" then kid = o end
+  end
+  T.check(truck ~= nil, "the truck is still on the dock")
+  T.check(kid ~= nil, "and so is the kid")
+  T.eq(kid and kid.x, 6, "standing two tiles past it")
+  T.eq(kid and kid.y, 0, "on the same walkable row")
+
+  local dock = MapScripts.get("VERMILION_DOCK")
+
+  -- THE KID off: facing him does nothing, same as any other switch here
+  run.loader.modSave[ID] = {}
+  store.kid = false
+  local g = fakeGame()
+  T.check(not dock.onInteract(g, nil, kid.x, kid.y), "THE KID off: he says nothing")
+  T.eq(#pushed, 0, "and pushes nothing")
+  store.kid = nil
+
+  -- nothing found yet: he still talks, but names exactly one rumour, and
+  -- gives away no coordinate -- the tile he stands on names none of them
+  run.loader.modSave[ID] = {}
+  g = fakeGame()
+  T.check(dock.onInteract(g, nil, kid.x, kid.y), "with nothing found, he talks")
+  T.eq(#pushed, 1, "one box")
+  T.eq(pushed[1] and #pushed[1].pages, 2, "an intro page and one claim")
+  local claimLine = pushed[1] and pushed[1].pages[2] and pushed[1].pages[2][1]
+  local claims = {
+    "SOMETHING SLEEPS", "ONE OF THE GHOSTS", "THERE'S A SECRET", "THE SHIP COMES",
+  }
+  local isClaim = false
+  for _, line in ipairs(claims) do if claimLine == line then isClaim = true end end
+  T.check(isClaim, "and it is one of the four rumours, not a coordinate -- got "
+    .. tostring(claimLine))
+  T.check(not (run.loader.modSave[ID] and run.loader.modSave[ID].kid),
+    "talking about it is not the same as being owed the reward")
+
+  -- some found, some not: he admits the ones you proved, then names every
+  -- myth still outstanding, one per page -- deterministic here because
+  -- only one is left
+  run.loader.modSave[ID] = { truck = true, ghost = true, garden = true }
+  g = fakeGame()
+  T.check(dock.onInteract(g, nil, kid.x, kid.y), "with three of four found, he talks")
+  T.eq(#pushed, 1, "still one box")
+  T.eq(pushed[1] and #pushed[1].pages, 2, "the acknowledgement and the one still missing")
+  local missingLine = pushed[1] and pushed[1].pages[2] and pushed[1].pages[2][2]
+  T.check(missingLine and missingLine:find("SS ANNE", 1, true) ~= nil,
+    "and it names the S.S. ANNE by name -- got " .. tostring(missingLine))
+
+  -- all four: the payoff, gated on every one of them and not one fewer
+  run.loader.modSave[ID] = { truck = true, ghost = true, garden = true, anne = false }
+  g = fakeGame()
+  dock.onInteract(g, nil, kid.x, kid.y)
+  local earlyBattle
+  for _, st in ipairs(pushed) do if st and st.kind == "wild" then earlyBattle = st end end
+  T.check(earlyBattle == nil, "three of four proven is not four of four: no reward yet")
+
+  run.loader.modSave[ID] = { truck = true, ghost = true, garden = true, anne = true }
+  g = fakeGame()
+  T.check(dock.onInteract(g, nil, kid.x, kid.y), "with all four found, he pays off")
+  T.check(#pushed >= 2, "a message and something under it, same shape as the other myths")
+  local reward
+  for _, st in ipairs(pushed) do if st and st.kind == "wild" then reward = st end end
+  T.check(reward ~= nil, "the payoff is a WILD BATTLE")
+  T.check(reward and not reward.dead, "a real one")
+  T.eq(reward and reward.enemy and reward.enemy.name, "MEWTWO",
+    "and it is MEWTWO -- the other big schoolyard claim, not a second MEW")
+  T.check(run.loader.modSave[ID] and run.loader.modSave[ID].kid == true,
+    "and the mod remembers, so this cannot be farmed")
+
+  -- second time: he has nothing left to keep score of
+  g = fakeGame()
+  dock.onInteract(g, nil, kid.x, kid.y)
+  local again = 0
+  for _, st in ipairs(pushed) do if st and st.kind == "wild" then again = again + 1 end end
+  T.eq(again, 0, "and the second visit hands out nothing more")
+
+  run.loader.modSave[ID] = {}
+elseif KANTO then
+  T.check(true,
+    "this dataset has no known kid sprite id and/or no MEWTWO, so no kid -- "
+      .. "the honest outcome, not a validation error")
 end
 
 -- ------- the option actually switches a myth off
