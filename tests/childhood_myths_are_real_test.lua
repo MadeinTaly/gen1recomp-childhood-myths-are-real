@@ -32,7 +32,9 @@ local KANTO = Data.maps.BILLS_HOUSE ~= nil
 -- The kid reuses a base-game sprite rather than shipping his own art, and
 -- mirrors main.lua's own candidate list exactly -- if that list changes
 -- there, it has to change here too, or this stops testing what ships.
-local KID_SPRITE_CANDIDATES = { "SPRITE_YOUNGSTER", "YOUNGSTER", "SPRITE_BOY", "BOY" }
+local KID_SPRITE_CANDIDATES = {
+  "SPRITE_GAMEBOY_KID", "SPRITE_YOUNGSTER", "SPRITE_LITTLE_BOY", "SPRITE_BUG_CATCHER",
+}
 local HAVE_KID_SPRITE = false
 for _, id in ipairs(KID_SPRITE_CANDIDATES) do
   if Data.sprites[id] then HAVE_KID_SPRITE = true end
@@ -491,6 +493,173 @@ do
     "the truck's art comes from this mod, not from the ROM cache")
   T.check(Data.sprites.CHILDHOOD_MYTHS_SPRITE_TRUCK.source == nil,
     "and carries no ROM source line")
+end
+
+-- ------- the cells are put to the map, not taken on trust
+--
+-- This is the section the 0.2.0 suite could not have: every assertion above
+-- that touches a Kanto map is gated on the dataset carrying one, and CI's
+-- fixture does not -- so the myths were never registered there and the
+-- suite passed while three of them could not fire on a real cartridge.
+-- (Reported: the ghost and the garden "just don't happen".)
+--
+-- So the dataset is BUILT here, with a tileset that has real collision in
+-- it: block 0 is wall, block 1 is floor. That makes it possible to put the
+-- authored cell on a wall on purpose -- which is the failure that was
+-- shipping -- and assert the myth relocates onto a cell the player can
+-- stand on rather than never firing.
+do
+  local D = T.fixtures.fresh()
+  setmetatable(D, { __index = function(_, k)
+    local v = Data[k]
+    if type(v) == "function" then return v end
+    return nil
+  end })
+
+  local SOLID, FLOOR = 0, 1
+  local function tiles(id)
+    local b = {}
+    for i = 1, 16 do b[i] = id end
+    return b
+  end
+  D.tilesets = D.tilesets or {}
+  D.tilesets.OVERWORLD = { id = "OVERWORLD",
+    blocks = { tiles(SOLID), tiles(FLOOR) }, walkable = { FLOOR } }
+
+  -- solid: cells to make wall, in CELL coordinates (a block is 2 cells)
+  local function map(id, w, h, solid, warps)
+    local blocks = {}
+    for i = 1, w * h do blocks[i] = 1 end
+    for _, c in ipairs(solid or {}) do
+      local bx, by = math.floor(c.x * 2 / 4), math.floor((c.y * 2 + 1) / 4)
+      blocks[by * w + bx + 1] = 0
+    end
+    D.maps[id] = { id = id, label = id, index = 900, tileset = "OVERWORLD",
+      width = w, height = h, borderBlock = 0, palette = "PALLET",
+      blocks = blocks, warps = warps or {}, objects = {} }
+  end
+
+  -- the authored cells are walls here, which is the whole point
+  map("POKEMON_TOWER_6F", 9, 10, { { x = 3, y = 10 } })
+  map("BILLS_HOUSE", 4, 4, { { x = 0, y = 2 } }, {
+    { x = 4, y = 6, destMap = "ROUTE_25", destWarp = 1 },
+    { x = 5, y = 6, destMap = "ROUTE_25", destWarp = 1 },
+  })
+  map("VERMILION_DOCK", 14, 6)
+  map("REDS_HOUSE_2F", 4, 4)
+
+  local template = select(2, next(D.pokemon))
+  for _, id in ipairs({ "GASTLY", "MEW", "MEWTWO", "EEVEE", "DITTO",
+                        "CHANSEY", "PORYGON", "LAPRAS" }) do
+    if not D.pokemon[id] then
+      local copy = {}
+      for k, v in pairs(template) do copy[k] = v end
+      copy.id, copy.name = id, id
+      D.pokemon[id] = copy
+    end
+  end
+  D.sprites = D.sprites or {}
+  local anySprite = select(2, next(D.sprites))
+  if anySprite and not D.sprites.SPRITE_GAMEBOY_KID then
+    local copy = {}
+    for k, v in pairs(anySprite) do copy[k] = v end
+    copy.id = "SPRITE_GAMEBOY_KID"
+    D.sprites.SPRITE_GAMEBOY_KID = copy
+  end
+
+  SaveData.loadOptions = function(fs)
+    local opts = realLoadOptions(fs)
+    opts.mods = opts.mods or {}
+    opts.mods[ID] = true
+    return opts
+  end
+  local kanto = T.sdk.loadMod(DIR, { data = D })
+  SaveData.loadOptions = realLoadOptions
+  T.eq(#kanto.errors, 0,
+    "loads clean on a Kanto-shaped dataset (" .. tostring(kanto.errors[1]) .. ")")
+
+  local Map = require("src.world.Map")
+  local towerView = Map.new(D.maps.POKEMON_TOWER_6F, D.tilesets.OVERWORLD)
+  T.check(not towerView:isWalkableCell(3, 10),
+    "the authored tower cell is a wall in this dataset -- the test means "
+    .. "something only because it is")
+
+  -- MapScripts composes off the Data SINGLETON, and this load registered
+  -- into D -- so the chains have to be the ones under test for the length
+  -- of this block, and the singleton's own put back after it.
+  local realChains = Data.map_scripts
+  Data.map_scripts = D.map_scripts
+  MapScripts.invalidate("POKEMON_TOWER_6F")
+  MapScripts.invalidate("VERMILION_DOCK")
+
+  local pushedHere
+  local function game(party)
+    pushedHere = {}
+    return {
+      data = D,
+      save = { player = {}, inventory = {}, flags = {},
+               pokedex = { seen = {}, owned = {} }, modData = {},
+               party = party or { { species = "GASTLY", level = 20,
+                                    hp = 30, maxHp = 30, moves = {} } } },
+      stack = { push = function(_, st) pushedHere[#pushedHere + 1] = st end,
+                pop = function() end },
+    }
+  end
+
+  local tower = MapScripts.get("POKEMON_TOWER_6F")
+  T.check(tower and tower.onStep, "the tower still has an onStep")
+  local firedAt
+  for y = 0, D.maps.POKEMON_TOWER_6F.height * 2 - 1 do
+    for x = 0, D.maps.POKEMON_TOWER_6F.width * 2 - 1 do
+      if not firedAt and tower.onStep(game(), nil, x, y) then
+        firedAt = { x = x, y = y }
+      end
+    end
+  end
+  T.check(firedAt ~= nil,
+    "the tower ghost fires SOMEWHERE -- 0.2.0 put it on a wall, where no "
+    .. "step could ever reach it")
+  T.check(firedAt and towerView:isWalkableCell(firedAt.x, firedAt.y),
+    "and on a cell the player can stand on")
+
+  -- the house keeps its own door, and gains one
+  local bills = D.maps.BILLS_HOUSE
+  T.eq(#bills.warps, 3, "BILLS_HOUSE keeps both exits and gains the passage")
+  T.eq(bills.warps[1].destMap, "ROUTE_25",
+    "the first exit is the one the dataset shipped, not a restated guess")
+  T.eq(bills.warps[2].destMap, "ROUTE_25", "and so is the second")
+  local passage = bills.warps[3]
+  T.eq(passage.destMap, GARDEN, "the third is the garden")
+  local billsView = Map.new(bills, D.tilesets.OVERWORLD)
+  T.check(billsView:isWalkableCell(passage.x, passage.y),
+    "and it sits on a cell the player can walk onto")
+  T.check(not (passage.x == bills.warps[1].x and passage.y == bills.warps[1].y),
+    "never on top of the door out")
+
+  -- and the way back names the warp it came in by
+  for _, back in ipairs(D.maps[GARDEN].warps or {}) do
+    T.eq(back.destWarp, 3, "the garden sends you back to the passage")
+  end
+
+  -- STRENGTH is a party move, not a bag item (0.2.0 asked for HM_STRENGTH,
+  -- an item id no Gen 1 dataset has, so the truck never moved for anyone)
+  local dock = MapScripts.get("VERMILION_DOCK")
+  T.check(dock and dock.onInteract, "the dock still has an onInteract")
+  local strong = { { species = "GASTLY", level = 20, hp = 30, maxHp = 30,
+                     moves = { { id = "STRENGTH" } } } }
+  T.check(dock.onInteract(game(strong), nil, 4, 0),
+    "a party that knows STRENGTH moves the truck")
+  T.eq(#pushedHere, 2, "and what it uncovers is a battle under a message")
+  local weak = { { species = "GASTLY", level = 20, hp = 30, maxHp = 30,
+                   moves = { { id = "TACKLE" } } } }
+  T.check(dock.onInteract(game(weak), nil, 4, 0),
+    "a party that does not is still answered")
+  T.eq(#pushedHere, 1, "with the refusal alone, and no battle")
+
+  Data.map_scripts = realChains
+  MapScripts.invalidate("POKEMON_TOWER_6F")
+  MapScripts.invalidate("VERMILION_DOCK")
+  kanto.release()
 end
 
 run.release()

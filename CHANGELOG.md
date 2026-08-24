@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.3.0-beta.1 — the myths were anchored to guesses
+
+Reported: the ghost and Bill's garden "just don't happen", with both switched
+on and the engine up to date. They did not, and neither did the truck. Three
+separate reasons, all of the same kind — this mod was anchoring its myths to
+numbers nobody had ever checked against the game's own data.
+
+**The truck could never move.** It asked whether the player was carrying an
+item called `HM_STRENGTH`. There is no such item id in a Gen 1 dataset: the
+extractor's item list carries no HM or TM entry at all, and `hms` is a list of
+MOVE names. So the test was false on every save that has ever existed, and the
+truck answered "it will not budge" forever. It now asks the engine's own
+question — `ow:partyKnows("STRENGTH")`, the same one the field-move menu asks,
+badge gate included — which is what the rumour meant by "something very
+strong" in the first place.
+
+**The ghost and the garden were placed on walls.** The tower's dead end at
+(3,10) and the corner in Bill's house at (0,2) were derived from map
+dimensions rather than from map data: the blocks come out of the player's own
+ROM, which this repository does not have, so both were educated guesses that
+nothing ever verified. A guess that lands on a solid tile is a myth that never
+fires and never says why, which is exactly what was reported.
+
+Both cells are now put to the map through the engine's own walkability, and
+when the authored one turns out to be solid the nearest cell the player can
+stand on takes over — nearest, so the author's intent survives a guess that
+was merely off by a tile. A dataset that cannot answer leaves the authored
+cell alone: unknown is not "solid".
+
+**Bill's front door was being replaced by a guess.** A record patch replaces a
+field rather than growing it, so the house's own exits had to survive the
+garden being added — and 0.2.0 restated them by hand, as two warps at (2,7)
+and (3,7) pointing at `LAST_MAP`. That is two more guesses about somebody
+else's data, and if the real pair sits anywhere else the patch was not
+preserving the exits, it was overwriting them. The exits are now copied from
+the record itself, and the garden's way back names whichever slot the passage
+actually landed in.
+
+**The suite could not have caught any of this**, which is the part worth
+writing down. Every myth assertion was gated on the dataset carrying Kanto,
+and CI's fixture is three species and two maps — so on CI the myths were never
+registered at all, and the suite passed while three of them could not fire on
+a cartridge. It now builds a dataset with real collision in it, puts the
+authored cells on walls on purpose, and asserts the myths relocate onto ground
+the player can reach. 17 checks became 35.
+
+It ships as a pre-release: all of this is confirmed against the engine's own
+data and a synthetic Kanto, and none of it against a real ROM — which is
+precisely the mistake 0.2.0 made. The launcher leaves everyone on 0.2.0 until
+someone playing a real cartridge says these fire.
+
 ## 0.2.0 — the fifth one is a witness
 
 - **THE KID.** He is not a fifth legend, he is a witness -- the one every

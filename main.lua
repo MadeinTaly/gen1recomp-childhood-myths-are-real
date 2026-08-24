@@ -135,6 +135,109 @@ return function(mod)
     return (game.save.inventory and game.save.inventory[itemId] or 0) > 0
   end
 
+  -- ------- STRENGTH is a move, not an item in the bag
+  --
+  -- 0.2.0 asked `carrying(game, "HM_STRENGTH")`, and there is no such item
+  -- id anywhere in a Gen 1 dataset: the extractor's own item list
+  -- (tools/rom_manifest.json, "items") carries no HM or TM entry at all --
+  -- `hms` is a list of MOVE names, CUT/FLY/SURF/STRENGTH/FLASH. So that
+  -- test could never be true, on anybody's save, and the truck answered
+  -- "it will not budge" forever. This is the whole of the truck myth not
+  -- working, and it was invisible because the suite's own fixture invented
+  -- the same id the mod did.
+  --
+  -- The engine's own question is `ow:partyKnows("STRENGTH")`, which is what
+  -- the field-move menu asks (src/world/WorldAPI.lua:185) and which also
+  -- honours the badge gate -- the rumour's "something very strong" is a
+  -- Pokemon that knows the move, exactly as pushing a boulder is. The
+  -- second argument of an onInteract IS the live overworld
+  -- (OverworldController:2033 passes `self`), so this needs nothing new.
+  --
+  -- The fallback reads the party directly, for a call with no overworld
+  -- behind it -- which is what the unit suite does.
+  local function canUseStrength(game, ow)
+    if ow and type(ow.partyKnows) == "function" then
+      local ok, mon = pcall(function() return ow:partyKnows("STRENGTH") end)
+      if ok then return mon ~= nil end
+    end
+    for _, mon in ipairs((game.save and game.save.party) or {}) do
+      for _, move in ipairs(mon.moves or {}) do
+        local id = type(move) == "table" and move.id or move
+        if id == "STRENGTH" then return true end
+      end
+    end
+    return false
+  end
+
+  -- ------- a cell the player can actually stand on
+  --
+  -- Every myth anchored to a base-game map picks a cell by hand, and 0.2.0
+  -- picked all of them from map dimensions rather than from map DATA: the
+  -- blocks come out of the player's own ROM and this repository has none,
+  -- so "the dead end at (3,10)" and "the corner at (0,2)" were educated
+  -- guesses that nothing ever checked. A guess that lands on a wall is a
+  -- myth that never fires and never says why -- which is exactly what was
+  -- reported.
+  --
+  -- So the cell is now CHECKED against the loaded map, through the engine's
+  -- own walkability (Map:isWalkableCell, the same table Collision consults),
+  -- and when the authored one turns out to be solid the nearest standable
+  -- cell to it is used instead. Nearest rather than first: it keeps the
+  -- author's intent -- that corner, that side of the room -- when the guess
+  -- was merely off by a tile.
+  --
+  -- A dataset that cannot answer (no blocks, no tileset, an engine without
+  -- the module) leaves the authored cell alone. Unknown is not "solid".
+  local Map = select(2, pcall(require, "src.world.Map"))
+  if type(Map) ~= "table" or type(Map.new) ~= "function" then Map = nil end
+
+  local builtMaps = setmetatable({}, { __mode = "k" })
+  local function mapView(mapDef)
+    if not (Map and type(mapDef) == "table" and mapDef.blocks) then return nil end
+    local hit = builtMaps[mapDef]
+    if hit ~= nil then return hit or nil end
+    local tileset = mapDef.tileset and mod.content.tilesets:get(mapDef.tileset)
+    local ok, view = pcall(Map.new, mapDef, tileset)
+    builtMaps[mapDef] = (ok and view) or false
+    return (ok and view) or nil
+  end
+
+  -- true / false / nil, where nil is "this dataset cannot say"
+  local function standable(mapDef, x, y)
+    local view = mapView(mapDef)
+    if not view then return nil end
+    local ok, walkable = pcall(function()
+      return view:inBounds(x, y) and view:isWalkableCell(x, y) or false
+    end)
+    if not ok then return nil end
+    return walkable
+  end
+
+  -- def.width/height are BLOCKS; a block is two cells on a side.
+  local function cellBounds(mapDef)
+    return (tonumber(mapDef.width) or 0) * 2, (tonumber(mapDef.height) or 0) * 2
+  end
+
+  local function nearestStandable(mapDef, preferred, accept)
+    if standable(mapDef, preferred.x, preferred.y) ~= false then
+      return preferred, false
+    end
+    local w, h = cellBounds(mapDef)
+    local best, bestDistance
+    for y = 0, h - 1 do
+      for x = 0, w - 1 do
+        if standable(mapDef, x, y) and (not accept or accept(x, y)) then
+          local distance = math.abs(x - preferred.x) + math.abs(y - preferred.y)
+          if not bestDistance or distance < bestDistance then
+            best, bestDistance = { x = x, y = y }, distance
+          end
+        end
+      end
+    end
+    if not best then return preferred, false end
+    return best, true
+  end
+
   -- ------- myth 1: Mew under the truck
   --
   -- The dock decodes as fourteen-by-six blocks of plain pier and carries no
@@ -244,7 +347,7 @@ return function(mod)
   mod.content.maps:patch("VERMILION_DOCK", { objects = dockObjects })
 
   mod.content.map_scripts:register("VERMILION_DOCK", {
-    onInteract = function(game, _, fx, fy)
+    onInteract = function(game, ow, fx, fy)
       -- Checked first, and returns unconditionally either way, so this
       -- never falls through into the truck's own coordinate check below.
       if HAVE_KID and fx == KID_X and fy == KID_Y then
@@ -296,7 +399,8 @@ return function(mod)
 
       -- The rumour was always specific: you needed STRENGTH. Without it the
       -- truck is just a truck, which is what it was for twenty-five years.
-      if not carrying(game, "HM_STRENGTH") then
+      -- Asked of the party, not of the bag -- see canUseStrength.
+      if not canUseStrength(game, ow) then
         game.stack:push(TextBox.new(game,
           "A parked TRUCK.\fIt will not budge.\nSomething very\vstrong could\vmove it."))
         return true
@@ -318,9 +422,22 @@ return function(mod)
   -- specific ghost, in the dead end at (3,10) on 6F, and only while the
   -- player still has no Scope. That is the myth exactly: before the Scope,
   -- there is a way.
-  local GHOST_X, GHOST_Y = 3, 10
+  --
+  -- (3,10) is where the dead end was authored to be, and 0.2.0 trusted that
+  -- number blind. It is now put to the map: if the player's own 6F has a
+  -- wall there, the nearest cell they can stand on takes over, so the myth
+  -- fires on a floor rather than never.
+  local GHOST_CELL = { x = 3, y = 10 }
 
   if have("maps", "POKEMON_TOWER_6F") and have("pokemon", "GASTLY") then
+  local towerDef = mod.content.maps:get("POKEMON_TOWER_6F")
+  local ghostCell, ghostMoved = nearestStandable(towerDef, GHOST_CELL)
+  if ghostMoved then
+    mod.log:info("tower ghost moved to (%d,%d): the authored cell is solid "
+      .. "in this dataset", ghostCell.x, ghostCell.y)
+  end
+  local GHOST_X, GHOST_Y = ghostCell.x, ghostCell.y
+
   mod.content.map_scripts:register("POKEMON_TOWER_6F", {
     onStep = function(game, _, x, y)
       if x ~= GHOST_X or y ~= GHOST_Y then return false end
@@ -392,20 +509,47 @@ return function(mod)
 
   mod.content.encounters:register(GARDEN, { grass = { rate = 25, slots = SLOTS } })
 
-  -- BILLS_HOUSE already HAS two warps, and a record patch replaces a field
-  -- rather than growing it, so the original pair is restated here. Losing
-  -- them would seal the player inside the house -- the test asserts both
-  -- still point outdoors, because this is the kind of thing that breaks
-  -- quietly and only for someone who already went in.
+  -- BILLS_HOUSE already HAS its own warps, and a record patch replaces a
+  -- field rather than growing it -- so the door out has to survive this
+  -- patch or the player is sealed inside the house.
   --
-  -- (0,2) is one of the two isolated floor tiles in the corners of that
-  -- room. A passage you find by walking into a corner is what the rumour
-  -- described.
-  mod.content.maps:patch("BILLS_HOUSE", {
+  -- 0.2.0 restated that pair BY HAND, as (2,7) and (3,7) pointing at
+  -- LAST_MAP. That is two guesses about somebody else's data: if the real
+  -- pair sits anywhere else, or names its destination differently, the
+  -- patch does not preserve the exits, it REPLACES them with a door that
+  -- may lead nowhere. The exits are now COPIED from the record itself, so
+  -- whatever the player's own ROM says the door is, it stays the door.
+  --
+  -- The entrance is authored for the corner at (0,2) -- a passage you find
+  -- by walking into a corner is what the rumour described -- and then put
+  -- to the map like the ghost's cell, because that number was a guess too.
+  -- A cell already carrying a warp is refused: standing on the door and
+  -- being sent to the garden is not a secret passage, it is a broken exit.
+  local billsDef = mod.content.maps:get("BILLS_HOUSE")
+  local warps = {}
+  local taken = {}
+  for _, warp in ipairs((billsDef and billsDef.warps) or {}) do
+    warps[#warps + 1] = warp
+    taken[tostring(warp.x) .. "," .. tostring(warp.y)] = true
+  end
+
+  local entry, entryMoved = nearestStandable(billsDef, { x = 0, y = 2 },
+    function(x, y) return not taken[x .. "," .. y] end)
+  if entryMoved then
+    mod.log:info("garden entrance moved to (%d,%d): the authored corner is "
+      .. "solid in this dataset", entry.x, entry.y)
+  end
+
+  warps[#warps + 1] = { x = entry.x, y = entry.y, destMap = GARDEN, destWarp = 1 }
+  mod.content.maps:patch("BILLS_HOUSE", { warps = warps })
+
+  -- The way back has to name the warp the player came in by, which is now
+  -- wherever it ended up in that list rather than a fixed third slot.
+  local BACK = #warps
+  mod.content.maps:patch(GARDEN, {
     warps = {
-      { x = 2, y = 7, destMap = "LAST_MAP", destWarp = 1 },
-      { x = 3, y = 7, destMap = "LAST_MAP", destWarp = 1 },
-      { x = 0, y = 2, destMap = GARDEN, destWarp = 1 },
+      { x = 5, y = 11, destMap = "BILLS_HOUSE", destWarp = BACK },
+      { x = 6, y = 11, destMap = "BILLS_HOUSE", destWarp = BACK },
     },
   })
   end
