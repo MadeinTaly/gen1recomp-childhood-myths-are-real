@@ -429,21 +429,38 @@ return function(mod)
   -- fires on a floor rather than never.
   local GHOST_CELL = { x = 3, y = 10 }
 
-  if have("maps", "POKEMON_TOWER_6F") and have("pokemon", "GASTLY") then
-  local towerDef = mod.content.maps:get("POKEMON_TOWER_6F")
-  local ghostCell, ghostMoved = nearestStandable(towerDef, GHOST_CELL)
-  if ghostMoved then
-    mod.log:info("tower ghost moved to (%d,%d): the authored cell is solid "
-      .. "in this dataset", ghostCell.x, ghostCell.y)
-  end
-  local GHOST_X, GHOST_Y = ghostCell.x, ghostCell.y
+  -- ------- and why it is no longer ONE tile
+  --
+  -- 0.3.0-beta.1 moved this cell off a wall, which was necessary and not
+  -- sufficient. A floor of six-by-ten blocks is roughly two hundred cells,
+  -- and a player climbing the tower walks maybe a dozen of them: a trigger
+  -- that waits on ONE named cell is a trigger almost nobody meets, whether
+  -- or not that cell is solid. That is the likelier half of "it just doesn't
+  -- happen" -- and it is not a bug I could have found by reading the map,
+  -- because the map was never the problem.
+  --
+  -- So the floor is the trigger. Anywhere on 6F, while the rumour's own
+  -- conditions hold -- the Scope not in the bag, this myth not yet found --
+  -- the shape notices you. That is also closer to what was actually
+  -- whispered: not "stand on this tile", but "one of the ghosts up there is
+  -- catchable".
+  --
+  -- Not instantly, though: WALK_BEFORE steps of grace, so it does not fire
+  -- on the stairs the moment the floor loads. Cheap and boring on purpose --
+  -- a counter in this screen's own save, not a random roll, so it cannot
+  -- fail to happen and cannot happen twice.
+  local WALK_BEFORE = 6
 
+  if have("maps", "POKEMON_TOWER_6F") and have("pokemon", "GASTLY") then
   mod.content.map_scripts:register("POKEMON_TOWER_6F", {
     onStep = function(game, _, x, y)
-      if x ~= GHOST_X or y ~= GHOST_Y then return false end
       if not on("ghost") then return false end
       if found("ghost") then return false end
       if carrying(game, "SILPH_SCOPE") then return false end
+
+      local walked = (mod.save:get("ghostSteps") or 0) + 1
+      mod.save:set("ghostSteps", walked)
+      if walked < WALK_BEFORE then return false end
 
       remember("ghost")
       encounter(game, "GASTLY", 30,
@@ -533,19 +550,52 @@ return function(mod)
     taken[tostring(warp.x) .. "," .. tostring(warp.y)] = true
   end
 
-  local entry, entryMoved = nearestStandable(billsDef, { x = 0, y = 2 },
-    function(x, y) return not taken[x .. "," .. y] end)
-  if entryMoved then
-    mod.log:info("garden entrance moved to (%d,%d): the authored corner is "
-      .. "solid in this dataset", entry.x, entry.y)
+  -- EVERY corner, not one of them.
+  --
+  -- The rumour is "a passage behind Bill's house", and the passage has no
+  -- door drawn on it -- that is the point of a secret. But a single unmarked
+  -- cell in a room is a coin flip on whether anyone ever stands there, and
+  -- 0.3.0-beta.1 still had exactly one. "Walk into a corner" is the version
+  -- of this rumour that a player can actually act on, so all four corners
+  -- are the passage: whichever one they try is the one that works.
+  --
+  -- Each is the nearest cell to that corner the player can stand on, so a
+  -- corner that is furniture or wall moves inward rather than being lost. A
+  -- cell already carrying a warp is refused -- standing on the front door
+  -- and being sent to the garden is not a secret passage, it is a broken
+  -- exit -- and so is a cell already claimed by another corner, which is
+  -- what keeps a tiny room from turning every tile into a trapdoor.
+  local w, h = cellBounds(billsDef)
+  local corners = {
+    { x = 0, y = 0 }, { x = w - 1, y = 0 },
+    { x = 0, y = h - 1 }, { x = w - 1, y = h - 1 },
+  }
+  local entries = {}
+  for _, corner in ipairs(corners) do
+    local cell = nearestStandable(billsDef, corner,
+      function(cx, cy) return not taken[cx .. "," .. cy] end)
+    local key = cell.x .. "," .. cell.y
+    if not taken[key] and standable(billsDef, cell.x, cell.y) ~= false then
+      taken[key] = true
+      entries[#entries + 1] = cell
+    end
   end
 
-  warps[#warps + 1] = { x = entry.x, y = entry.y, destMap = GARDEN, destWarp = 1 }
+  -- A dataset that cannot answer walkability at all (no blocks, no tileset)
+  -- leaves the authored corner as the single entrance, which is what every
+  -- earlier release shipped.
+  if #entries == 0 then entries[1] = { x = 0, y = 2 } end
+
+  mod.log:info("garden entrances: %d", #entries)
+  local BACK = #warps + 1
+  for _, cell in ipairs(entries) do
+    warps[#warps + 1] = { x = cell.x, y = cell.y, destMap = GARDEN, destWarp = 1 }
+  end
   mod.content.maps:patch("BILLS_HOUSE", { warps = warps })
 
-  -- The way back has to name the warp the player came in by, which is now
-  -- wherever it ended up in that list rather than a fixed third slot.
-  local BACK = #warps
+  -- The way back names the FIRST of them: they all lead to the same garden,
+  -- and coming out of one door you did not go in by is a smaller surprise
+  -- than coming out into a wall.
   mod.content.maps:patch(GARDEN, {
     warps = {
       { x = 5, y = 11, destMap = "BILLS_HOUSE", destWarp = BACK },

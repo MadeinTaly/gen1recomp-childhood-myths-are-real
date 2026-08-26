@@ -593,6 +593,17 @@ do
   MapScripts.invalidate("VERMILION_DOCK")
 
   local pushedHere
+  local function gameWithScope()
+    return {
+      data = D,
+      save = { player = {}, inventory = { SILPH_SCOPE = 1 }, flags = {},
+               pokedex = { seen = {}, owned = {} }, modData = {},
+               party = { { species = "GASTLY", level = 20, hp = 30,
+                           maxHp = 30, moves = {} } } },
+      stack = { push = function() end, pop = function() end },
+    }
+  end
+
   local function game(party)
     pushedHere = {}
     return {
@@ -608,37 +619,64 @@ do
 
   local tower = MapScripts.get("POKEMON_TOWER_6F")
   T.check(tower and tower.onStep, "the tower still has an onStep")
-  local firedAt
-  for y = 0, D.maps.POKEMON_TOWER_6F.height * 2 - 1 do
-    for x = 0, D.maps.POKEMON_TOWER_6F.width * 2 - 1 do
-      if not firedAt and tower.onStep(game(), nil, x, y) then
-        firedAt = { x = x, y = y }
-      end
+
+  -- THE FLOOR is the trigger now, not a cell. 0.2.0 named one cell out of
+  -- roughly two hundred and 0.3.0-beta.1 only moved that cell off a wall;
+  -- either way a player climbing the tower walks a dozen cells and meets
+  -- neither. So: walk about on 6F without the Scope and it happens.
+  local steps, firedOn = 0, nil
+  for i = 1, 12 do
+    if not firedOn and tower.onStep(game(), nil, 5 + (i % 3), 9) then
+      firedOn = i
     end
+    steps = i
   end
-  T.check(firedAt ~= nil,
-    "the tower ghost fires SOMEWHERE -- 0.2.0 put it on a wall, where no "
-    .. "step could ever reach it")
-  T.check(firedAt and towerView:isWalkableCell(firedAt.x, firedAt.y),
-    "and on a cell the player can stand on")
+  T.check(firedOn ~= nil,
+    "walking the floor is enough -- the ghost no longer waits on one cell "
+    .. "nobody stands on")
+  T.check(firedOn and firedOn > 1,
+    "but not on the step you arrive on: the stairs get a moment's grace")
+
+  -- and only ever once, however far you wander afterwards
+  local again = false
+  for i = 1, 12 do
+    if tower.onStep(game(), nil, 4, 8 + (i % 4)) then again = true end
+  end
+  T.check(not again, "and only once, however long you stay up there")
+
+  -- the Scope is the rumour's own condition and still gates it
+  T.check(not tower.onStep(gameWithScope(), nil, 5, 9),
+    "with the SILPH SCOPE in the bag it does not happen at all")
 
   -- the house keeps its own door, and gains one
   local bills = D.maps.BILLS_HOUSE
-  T.eq(#bills.warps, 3, "BILLS_HOUSE keeps both exits and gains the passage")
   T.eq(bills.warps[1].destMap, "ROUTE_25",
     "the first exit is the one the dataset shipped, not a restated guess")
   T.eq(bills.warps[2].destMap, "ROUTE_25", "and so is the second")
-  local passage = bills.warps[3]
-  T.eq(passage.destMap, GARDEN, "the third is the garden")
+
+  -- EVERY corner is the passage, because one unmarked cell in a room is a
+  -- coin flip on whether anybody ever stands there
   local billsView = Map.new(bills, D.tilesets.OVERWORLD)
-  T.check(billsView:isWalkableCell(passage.x, passage.y),
-    "and it sits on a cell the player can walk onto")
-  T.check(not (passage.x == bills.warps[1].x and passage.y == bills.warps[1].y),
-    "never on top of the door out")
+  local passages, seen = {}, {}
+  for i = 3, #bills.warps do
+    local w = bills.warps[i]
+    T.eq(w.destMap, GARDEN, "every warp this mod adds leads to the garden")
+    T.check(billsView:isWalkableCell(w.x, w.y),
+      "and sits on a cell the player can walk onto")
+    local key = w.x .. "," .. w.y
+    T.check(not seen[key], "with no two of them on the same cell")
+    seen[key] = true
+    T.check(not (w.x == bills.warps[1].x and w.y == bills.warps[1].y),
+      "and never on top of the door out")
+    passages[#passages + 1] = w
+  end
+  T.check(#passages > 1,
+    "there is more than one way in -- walk into A corner, not THE corner")
 
   -- and the way back names the warp it came in by
   for _, back in ipairs(D.maps[GARDEN].warps or {}) do
-    T.eq(back.destWarp, 3, "the garden sends you back to the passage")
+    T.eq(back.destWarp, 3,
+      "the garden sends you back to the first of them, never into a wall")
   end
 
   -- STRENGTH is a party move, not a bag item (0.2.0 asked for HM_STRENGTH,

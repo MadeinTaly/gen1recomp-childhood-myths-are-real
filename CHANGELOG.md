@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0-beta.2 — a myth you can actually walk into
+
+beta.1 moved the ghost and the garden off walls, which was necessary and not
+sufficient. Six-by-ten blocks of tower floor is roughly two hundred cells; a
+player climbing it walks maybe a dozen. **A trigger waiting on one named cell
+is a trigger almost nobody meets**, whether or not that cell is solid — and
+that is the likelier half of "it just doesn't happen". It is also not
+something the map data could have told me, because the map was never the
+problem.
+
+**The tower floor is the trigger now.** Anywhere on 6F, while the rumour's own
+conditions hold — the SILPH SCOPE not in your bag, this myth not yet found —
+the shape notices you. Six steps of grace first, so it does not fire on the
+stairs the moment the floor loads, counted in this mod's own save rather than
+rolled: it cannot fail to happen, and it cannot happen twice. That is also
+closer to what was actually whispered — not "stand on this tile", but "one of
+the ghosts up there can be caught".
+
+**Every corner of Bill's house is the passage.** The rumour is a hidden way
+with no door drawn on it, which is the point of a secret; but one unmarked
+cell in a room is a coin flip on whether anybody ever stands there. All four
+corners now lead to the garden — whichever one you try is the one that works
+— each moved inward to the nearest cell you can stand on if the corner itself
+is furniture, and never placed on top of the front door.
+
 ## 0.3.0-beta.1 — the myths were anchored to guesses
 
 Reported: the ghost and Bill's garden "just don't happen", with both switched
