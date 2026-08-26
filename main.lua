@@ -332,6 +332,101 @@ return function(mod)
     return missing
   end
 
+  -- ------- how the dock is TALKED to (and why it never was)
+  --
+  -- OverworldState:interact looks for an NPC on the cell you are facing
+  -- FIRST, and if it finds one it talks to it and RETURNS
+  -- (src/world/OverworldController.lua:2151-2178). The map script's
+  -- onInteract is thirty lines further down, past the signs, the card-key
+  -- doors and the hidden items -- so for a cell with an object standing on
+  -- it, onInteract is never reached at all.
+  --
+  -- The truck and the kid ARE objects. Every word either of them was written
+  -- to say lived in an onInteract that the engine had no reason to call, and
+  -- what the player got instead was the vanilla talk path looking up a
+  -- TEXT_* id these objects do not carry. That is the unreadable text.
+  --
+  -- The engine names the seam in the same breath: "a runtime object a mod
+  -- spawned carries no TEXT_* id, so the vanilla path has nothing to say for
+  -- it; a mod that owns the object wraps this and simply does not call
+  -- next()" (:2169-2172, and docs/modding.md's `world.talk`). So that is
+  -- where the dialogue goes, and onInteract keeps a copy for the cells no
+  -- object stands on.
+  local function talkKid(game)
+    if not on("kid") then return false end
+
+    if found("kid") then
+      game.stack:push(TextBox.new(game,
+        "THANKS AGAIN FOR\nBELIEVING ME."))
+      return true
+    end
+
+    local missing = missingMyths()
+
+    if #missing == 0 then
+      remember("kid")
+      encounter(game, KID_REWARD_SPECIES, KID_REWARD_LEVEL,
+        "YOU WERE RIGHT\nABOUT ALL OF IT!\fEVEN THIS ONE\nWAS TRUE ALL\vALONG...")
+      return true
+    end
+
+    if #missing == #MYTH_ORDER then
+      -- Nothing proven yet: he introduces himself and repeats ONE
+      -- rumour, picked at random, the way any one kid on any one
+      -- playground only ever swore to the one his cousin told him.
+      local pick = MYTH_ORDER[math.random(#MYTH_ORDER)]
+      game.stack:push(TextBox.new(game,
+        "MY COUSIN SWEARS\nHE'S SEEN STUFF.\f" .. MYTH_CLAIM[pick]))
+      return true
+    end
+
+    -- Some found, some not: he admits the ones you proved him right
+    -- about, then names every one still outstanding, one to a page.
+    local pages = { "SO IT WAS TRUE!\nI KNEW IT!" }
+    for _, key in ipairs(missing) do
+      pages[#pages + 1] = "STILL LOOKING\nFOR " .. MYTH_LABEL[key] .. "?"
+    end
+    game.stack:push(TextBox.new(game, table.concat(pages, "\f")))
+    return true
+  end
+
+  local function talkTruck(game, ow)
+    if not on("truck") then return false end
+
+    if found("truck") then
+      game.stack:push(TextBox.new(game,
+        "The TRUCK is where\nyou left it.\fWhatever was under\nit is yours now."))
+      return true
+    end
+
+    -- The rumour was always specific: you needed STRENGTH. Without it the
+    -- truck is just a truck, which is what it was for twenty-five years.
+    -- Asked of the party, not of the bag -- see canUseStrength.
+    if not canUseStrength(game, ow) then
+      game.stack:push(TextBox.new(game,
+        "A parked TRUCK.\fIt will not budge.\nSomething very\vstrong could\vmove it."))
+      return true
+    end
+
+    remember("truck")
+    encounter(game, "MEW", 7,
+      "You shoved the\nTRUCK aside!\fSomething was\nsleeping under it!")
+    return true
+  end
+
+  -- The A press on an object, before the map's text tables get it. Ours are
+  -- answered here and `next` is deliberately not called; anything else --
+  -- another mod's object, a vanilla NPC -- falls through untouched.
+  mod.hooks:wrap("world.talk", function(next, ow, target)
+    local name = type(target) == "table" and target.name or nil
+    local game = mod.game
+    if game then
+      if name == "CHILDHOOD_MYTHS_KID" and talkKid(game) then return end
+      if name == "CHILDHOOD_MYTHS_TRUCK" and talkTruck(game, ow) then return end
+    end
+    return next(ow, target)
+  end)
+
   if HAVE_DOCK then
   local dockObjects = {
     { index = 1, name = "CHILDHOOD_MYTHS_TRUCK", sprite = "CHILDHOOD_MYTHS_SPRITE_TRUCK",
@@ -346,70 +441,15 @@ return function(mod)
 
   mod.content.maps:patch("VERMILION_DOCK", { objects = dockObjects })
 
+
+  -- Kept for a boot where these are not objects at all -- a dataset whose
+  -- dock refuses the patch, or an engine that reaches onInteract first. It
+  -- costs one comparison per A press on this map.
   mod.content.map_scripts:register("VERMILION_DOCK", {
     onInteract = function(game, ow, fx, fy)
-      -- Checked first, and returns unconditionally either way, so this
-      -- never falls through into the truck's own coordinate check below.
-      if HAVE_KID and fx == KID_X and fy == KID_Y then
-        if not on("kid") then return false end
-
-        if found("kid") then
-          game.stack:push(TextBox.new(game,
-            "THANKS AGAIN FOR\nBELIEVING ME."))
-          return true
-        end
-
-        local missing = missingMyths()
-
-        if #missing == 0 then
-          remember("kid")
-          encounter(game, KID_REWARD_SPECIES, KID_REWARD_LEVEL,
-            "YOU WERE RIGHT\nABOUT ALL OF IT!\fEVEN THIS ONE\nWAS TRUE ALL\vALONG...")
-          return true
-        end
-
-        if #missing == #MYTH_ORDER then
-          -- Nothing proven yet: he introduces himself and repeats ONE
-          -- rumour, picked at random, the way any one kid on any one
-          -- playground only ever swore to the one his cousin told him.
-          local pick = MYTH_ORDER[math.random(#MYTH_ORDER)]
-          game.stack:push(TextBox.new(game,
-            "MY COUSIN SWEARS\nHE'S SEEN STUFF.\f" .. MYTH_CLAIM[pick]))
-          return true
-        end
-
-        -- Some found, some not: he admits the ones you proved him right
-        -- about, then names every one still outstanding, one to a page.
-        local pages = { "SO IT WAS TRUE!\nI KNEW IT!" }
-        for _, key in ipairs(missing) do
-          pages[#pages + 1] = "STILL LOOKING\nFOR " .. MYTH_LABEL[key] .. "?"
-        end
-        game.stack:push(TextBox.new(game, table.concat(pages, "\f")))
-        return true
-      end
-
-      if fx ~= TRUCK_X or fy ~= TRUCK_Y then return false end
-      if not on("truck") then return false end
-
-      if found("truck") then
-        game.stack:push(TextBox.new(game,
-          "The TRUCK is where\nyou left it.\fWhatever was under\nit is yours now."))
-        return true
-      end
-
-      -- The rumour was always specific: you needed STRENGTH. Without it the
-      -- truck is just a truck, which is what it was for twenty-five years.
-      -- Asked of the party, not of the bag -- see canUseStrength.
-      if not canUseStrength(game, ow) then
-        game.stack:push(TextBox.new(game,
-          "A parked TRUCK.\fIt will not budge.\nSomething very\vstrong could\vmove it."))
-        return true
-      end
-
-      remember("truck")
-      encounter(game, "MEW", 7,
-        "You shoved the\nTRUCK aside!\fSomething was\nsleeping under it!")
-      return true
+      if HAVE_KID and fx == KID_X and fy == KID_Y then return talkKid(game) end
+      if fx == TRUCK_X and fy == TRUCK_Y then return talkTruck(game, ow) end
+      return false
     end,
   })
   end

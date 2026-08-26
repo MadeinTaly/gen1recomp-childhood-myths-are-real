@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.3.0-beta.3 — the truck and the kid could never speak
+
+Reported: the kid who keeps score of the myths shows unreadable glyphs.
+
+He does, and so does the truck, and **neither of them has ever said a word of
+what they were written to say.** The reason is one line of engine order:
+`OverworldState:interact` looks for an object on the cell you are facing
+FIRST, talks to it, and returns (`src/world/OverworldController.lua:
+2151-2178`). The map script's `onInteract` — where every line of this mod's
+dialogue lived — is thirty lines further down, past the signs, the card-key
+doors and the hidden items. For a cell with an object standing on it, it is
+never reached at all.
+
+So the A press went to the vanilla talk path, which looks up a `TEXT_*` id.
+These objects carry none: they are this mod's, added to a dock the base game
+leaves empty. What prints for a missing text id is the indecipherable text in
+the report.
+
+The engine names the seam in the same breath as the problem: "a runtime
+object a mod spawned carries no `TEXT_*` id, so the vanilla path has nothing
+to say for it; a mod that owns the object wraps this and simply does not call
+`next()`". So the dialogue now lives in a `world.talk` wrap, which is raised
+*before* the map's text tables. Anything that is not ours falls straight
+through, untouched, as it always did — and `onInteract` keeps a copy for a
+boot where these are not objects at all.
+
+Asserted the way it should have been from the start: the A press on the kid
+and on the truck is answered by this mod and does NOT fall through, and an
+ordinary NPC still talks exactly as before. 50 checks became 56.
+
+**THE KID exists**, incidentally — that was the other half of the question.
+He stands two tiles down the dock from the truck and wears `SPRITE_GAMEBOY_KID`,
+which is a real id in the extractor's own list of 72. It is only that until
+now, talking to him did not reach him.
+
 ## 0.3.0-beta.2 — a myth you can actually walk into
 
 beta.1 moved the ghost and the garden off walls, which was necessary and not

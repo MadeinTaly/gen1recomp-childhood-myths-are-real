@@ -700,5 +700,57 @@ do
   kanto.release()
 end
 
+-- ------- the A press on the truck and on the kid reaches THIS mod
+--
+-- This is the bug that made both of them unreadable, and it was never about
+-- the words. OverworldState:interact looks for an NPC on the faced cell
+-- first and RETURNS after talking to it
+-- (src/world/OverworldController.lua:2151-2178); the map script's
+-- onInteract is thirty lines further down. The truck and the kid ARE
+-- objects, so every line either of them was written to say sat in a function
+-- the engine had no reason to call, and the player got the vanilla talk path
+-- looking up a TEXT_* id these objects do not carry.
+--
+-- The seam is `world.talk`, raised before the map's text tables get it. What
+-- is asserted is the thing that was wrong: OURS are answered here and next()
+-- is not called, and everybody else's object still falls through.
+do
+  local Runtime = require("src.mods.Runtime")
+  -- a game of its own: fakeGame builds a real PIDGEY, and CI's fixture has
+  -- three species, none of them that one
+  local said = {}
+  run.loader.game = {
+    data = Data,
+    save = { player = {}, inventory = {}, flags = {},
+             pokedex = { seen = {}, owned = {} }, modData = {},
+             party = { { species = next(Data.pokemon), level = 5,
+                         hp = 20, maxHp = 20, moves = {} } } },
+    stack = { push = function(_, st) said[#said + 1] = st end,
+              pop = function() end },
+  }
+
+  local fellThrough
+  local function fallback() fellThrough = true end
+
+  for _, name in ipairs({ "CHILDHOOD_MYTHS_KID", "CHILDHOOD_MYTHS_TRUCK" }) do
+    fellThrough = false
+    said = {}
+    Runtime.call("world.talk", fallback, {}, { name = name })
+    T.check(not fellThrough,
+      name .. " is answered by this mod, not by the text tables it has no id in")
+    T.check(#said > 0, "and something is actually said")
+  end
+
+  fellThrough = false
+  Runtime.call("world.talk", fallback, {}, { name = "A_VANILLA_NPC" })
+  T.check(fellThrough, "anyone else's object talks exactly the way it did")
+
+  fellThrough = false
+  Runtime.call("world.talk", fallback, {}, nil)
+  T.check(fellThrough, "and a talk with no object at all is not ours to answer")
+
+  run.loader.game = nil
+end
+
 run.release()
 T.finish("childhood_myths_are_real")
